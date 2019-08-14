@@ -1,20 +1,6 @@
 import React, { Component } from "react";
 import { Redirect, Link } from 'react-router-dom';
-import '../styles/App.scss';
-
-class LogButton extends React.Component {
-
-  constructor(props){
-    super(props);
-  }
-
-  render(){
-    return(
-      <button type="submit">Sign in</button>
-    );
-  }
-
-}
+import LogButton from './LogButton/LogButton.js';
 
 class LoginForm extends React.Component {
 

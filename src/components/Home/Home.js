@@ -1,190 +1,12 @@
 import React, { Component } from "react";
 import { Redirect, Link } from 'react-router-dom';
+import LogOutButton from './LogOutButton/LogOutButton.js';
+import UserInfo from './UserInfo/UserInfo.js';
+import ItemElement from './ItemElement/ItemElement.js';
+import DeleteItemBlock from './DeleteItemBlock/DeleteItemBlock.js';
+import Drawer from './Drawer/Drawer.js';
+
 import axios from 'axios';
-import '../styles/App.scss';
-
-const CancelToken = axios.CancelToken;
-const source = CancelToken.source();
-var cancel;
-
-class LogOutButton extends React.Component {
-
-  constructor(props){
-    super(props);
-  }
-
-  render(){
-    return(
-      <button className="logOutButton">
-        <span id="logOutButtonText">Log out</span>
-        <img src="/dist/img/logout.png"/>
-      </button>
-    );
-  }
-
-}
-
-class UserInfo extends React.Component {
-
-  constructor(props){
-    super(props);
-  }
-
-  render(){
-    return(
-      <span id="user-email-info">
-        &#x3c;{localStorage.getItem('mail')}&#x3e;
-      </span>
-    );
-  }
-
-}
-
-class ItemElement extends React.Component {
-  constructor(props){
-    super(props);
-  }
-  render(){
-    return(
-      <div className="item-block" id={'item-' + this.props.idUpdate}>
-        <div className="control-button-block">
-          <button type="button" className="redact-item" value={this.props.idUpdate} onClick={() => {this.props.openDrawerUpdate(this.props.idUpdate)}}>
-            <img src="/dist/img/redact.png"/>
-          </button>
-          <button type="button" className="delete-item" onClick={this.props.openPopUp}>
-            <img src="/dist/img/delete.png"/>
-          </button>
-        </div>
-        <h1 className={'title-' + this.props.idUpdate}>{this.props.title}</h1>
-        <p className={'description-' + this.props.idUpdate}>{this.props.description}</p>
-      </div>
-    );
-  }
-}
-
-class DeleteItemBlock extends React.Component {
-
-  constructor(props){
-    super(props);
-  }
-
-  render(){
-    return(
-      <div className="delete-item-block">
-        <div className="popUp">
-          <input type="hidden" id="drop-post-id"/>
-          <h1>Delete this post?</h1>
-          <hr/>
-          <div className="drop-post-name"></div>
-          <form className="button-block" onSubmit={this.props.deleteItem}>
-            <button type="submit">
-              <img src="/dist/img/yes.png"/>
-            </button>
-            <button type="button" onClick={() => {this.props.closePopUp()}}>
-              <img src="/dist/img/no.png"/>
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-}
-
-class DrawerInputTitle extends React.Component {
-
-  constructor(props){
-    super(props);
-    this.state = {
-      title: this.props.value
-    };
-    this.handleChangeTitle = this.handleChangeTitle.bind(this);
-  }
-
-  handleChangeTitle(e){
-    this.setState({
-      title: e.target.value
-    });
-  }
-
-  render(){
-    return(
-      <input type="text" id="drawer-title" value={this.state.title} onChange={this.handleChangeTitle}/>
-    );
-  }
-
-}
-
-class DrawerTextAreaDescription extends React.Component {
-
-  constructor(props){
-    super(props);
-    this.state = {
-      description: this.props.value
-    };
-    this.handleChangeDescription = this.handleChangeDescription.bind(this);
-  }
-
-  handleChangeDescription(e){
-    this.setState({
-      description: e.target.value
-    });
-  }
-
-  render(){
-    return(
-      <textarea id="drawer-description" value={this.state.description} onChange={this.handleChangeDescription}></textarea>
-    );
-  }
-
-}
-
-class Drawer extends React.Component {
-
-  constructor(props){
-    super(props);
-    this.state = {
-      title: null,
-      description: null
-    };
-  }
-
-  render(){
-    //alert('Меня вызвали! Мои данные: режим - ' + this.props.formAdd + '. ID = ' + this.props.idUpdate);
-    if(this.props.formAdd){
-      return(
-        <form className="add-and-update-block" onSubmit={this.props.addPost}>
-          <h1 id="drawer-info">Add new post</h1>
-          <label htmlFor="drawer-title">Title</label>
-          <input id="drawer-title" type="text"/>
-          <label htmlFor="drawer-description">Description</label>
-          <textarea id="drawer-description"></textarea>
-          <button type="submit" id="submit-drawer">Submit</button>
-          <button type="button" id="close-drawer" onClick={this.props.closeDrawer}>
-            <img src="/dist/img/no.png"/>
-          </button>
-        </form>
-      );
-    }
-    else {
-      return(
-        <form className="add-and-update-block" onSubmit={this.props.updatePost}>
-          <h1 id="drawer-info">Update post</h1>
-          <input type="hidden" id="update-post-id" value={this.props.idUpdate}/>
-          <label htmlFor="drawer-title">Title</label>
-          <DrawerInputTitle value={document.querySelector('.title-' + this.props.idUpdate).innerText}/>
-          <label htmlFor="drawer-description">Description</label>
-          <DrawerTextAreaDescription value={document.querySelector('.description-' + this.props.idUpdate).innerText}/>
-          <button type="submit" id="submit-drawer">Submit</button>
-          <button type="button" id="close-drawer" onClick={this.props.closeDrawer}>
-            <img src="/dist/img/no.png"/>
-          </button>
-        </form>
-      );
-    }
-  }
-
-}
 
 class Home extends React.Component {
 
@@ -196,6 +18,7 @@ class Home extends React.Component {
       formAdd: 1,
       idUpdateItem: null
     };
+    this._isMounted = false;
     // this.componentDidMount = this.componentDidMount.bind(this);
     this.logOut = this.logOut.bind(this);
     this.closePopUp = this.closePopUp.bind(this);
@@ -236,14 +59,12 @@ class Home extends React.Component {
     axios({
       method: 'get',
       url: 'https://raysael.herokuapp.com/todo?author=' + localStorage['mail']
-    },{
-      cancelToken: new CancelToken(function executor(c) {
-        cancel = c;
-      })
     }).catch(function(error){
       alert('Произошла ошибка');
     }).then((responce) => {
-      this.setState({posts: responce.data})
+      if(this._isMounted){
+        this.setState({posts: responce.data})
+      }
     });
   }
 
@@ -274,7 +95,6 @@ class Home extends React.Component {
       let postsList = this.state.posts;
       let sliceElement = null;
       postsList.forEach((post, i, mass) => {
-        console.log(i);
         if(post._id == id) {
           sliceElement = i;
         }
@@ -448,11 +268,12 @@ class Home extends React.Component {
   }
 
   componentDidMount(){
+    this._isMounted = true;
     this.updatePostsList();
   }
 
   componentWillUnmount(){
-    cancel();
+     this._isMounted = false;
   }
 
   render(){

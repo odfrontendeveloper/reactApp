@@ -1,6 +1,6 @@
 import React from "react";
-import LoginForm from './Login.js';
-import Home from './Home.js';
+import LoginForm from './Login/Login.js';
+import Home from './Home/Home.js';
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 
 

@@ -9,7 +9,7 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     path: path.join(__dirname, "/dist"),
-    filename: "index_bundle.js"
+    filename: "js/index_bundle.js"
   },
   module: {
     rules: [
@@ -62,7 +62,7 @@ module.exports = {
       template: "./src/index.html"
     }),
     new MiniCssExtractPlugin({
-      filename: "main.css"
+      filename: "css/main.css"
     }),
     new CopyPlugin([
       {
