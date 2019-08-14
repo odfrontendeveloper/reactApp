@@ -3,6 +3,10 @@ import { Redirect, Link } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/App.scss';
 
+const CancelToken = axios.CancelToken;
+const source = CancelToken.source();
+var cancel;
+
 class LogOutButton extends React.Component {
 
   constructor(props){
@@ -71,7 +75,7 @@ class DeleteItemBlock extends React.Component {
           <input type="hidden" id="drop-post-id"/>
           <h1>Delete this post?</h1>
           <hr/>
-          <div class="drop-post-name"></div>
+          <div className="drop-post-name"></div>
           <form className="button-block" onSubmit={this.props.deleteItem}>
             <button type="submit">
               <img src="/dist/img/yes.png"/>
@@ -146,13 +150,14 @@ class Drawer extends React.Component {
   }
 
   render(){
+    //alert('Меня вызвали! Мои данные: режим - ' + this.props.formAdd + '. ID = ' + this.props.idUpdate);
     if(this.props.formAdd){
       return(
         <form className="add-and-update-block" onSubmit={this.props.addPost}>
           <h1 id="drawer-info">Add new post</h1>
-          <label for="drawer-title">Title</label>
+          <label htmlFor="drawer-title">Title</label>
           <input id="drawer-title" type="text"/>
-          <label for="drawer-description">Description</label>
+          <label htmlFor="drawer-description">Description</label>
           <textarea id="drawer-description"></textarea>
           <button type="submit" id="submit-drawer">Submit</button>
           <button type="button" id="close-drawer" onClick={this.props.closeDrawer}>
@@ -166,9 +171,9 @@ class Drawer extends React.Component {
         <form className="add-and-update-block" onSubmit={this.props.updatePost}>
           <h1 id="drawer-info">Update post</h1>
           <input type="hidden" id="update-post-id" value={this.props.idUpdate}/>
-          <label for="drawer-title">Title</label>
+          <label htmlFor="drawer-title">Title</label>
           <DrawerInputTitle value={document.querySelector('.title-' + this.props.idUpdate).innerText}/>
-          <label for="drawer-description">Description</label>
+          <label htmlFor="drawer-description">Description</label>
           <DrawerTextAreaDescription value={document.querySelector('.description-' + this.props.idUpdate).innerText}/>
           <button type="submit" id="submit-drawer">Submit</button>
           <button type="button" id="close-drawer" onClick={this.props.closeDrawer}>
@@ -191,7 +196,7 @@ class Home extends React.Component {
       formAdd: 1,
       idUpdateItem: null
     };
-    this.componentDidMount = this.componentDidMount.bind(this);
+    // this.componentDidMount = this.componentDidMount.bind(this);
     this.logOut = this.logOut.bind(this);
     this.closePopUp = this.closePopUp.bind(this);
     this.openDrawerAdd = this.openDrawerAdd.bind(this);
@@ -206,16 +211,19 @@ class Home extends React.Component {
       let final = list.some(function(el){
         return el == 'add-and-update-block';
       });
-      if(!final){
-        this.closeDrawer();
-      }
       let final2 = list.some(function(el){
         return el == 'popUp';
       });
-      if(!final2){
-        document.querySelector('.delete-item-block').style.display = 'none';
+      let drawer = document.querySelector('.add-and-update-block');
+      if(!final && getComputedStyle(drawer).left == '0px'){
+        this.closeDrawer();
       }
+      else if(!final2 && getComputedStyle(document.querySelector('.delete-item-block')).display == 'flex'){
+        this.closePopUp();
+      }
+      // alert(getComputedStyle(document.querySelector('.popUp')).display);
     };
+    // this.updatePostsList();
   }
 
   logOut(e){
@@ -228,22 +236,28 @@ class Home extends React.Component {
     axios({
       method: 'get',
       url: 'https://raysael.herokuapp.com/todo?author=' + localStorage['mail']
+    },{
+      cancelToken: new CancelToken(function executor(c) {
+        cancel = c;
+      })
+    }).catch(function(error){
+      alert('Произошла ошибка');
     }).then((responce) => {
       this.setState({posts: responce.data})
     });
   }
 
   openPopUp(id){
-    // alert('123');
-    // console.log(document.querySelector('.delete-item-block'));
     setTimeout(function(){
       document.querySelector('.drop-post-name').innerText = document.querySelector('.title-' + id).innerText;
       document.querySelector('#drop-post-id').value = id;
       document.querySelector('.delete-item-block').style.display = "flex";
+      document.querySelector('.overlay').style.display = "block";
     }, 10);
   }
 
   closePopUp(){
+    document.querySelector('.overlay').style.display = "none";
     document.querySelector('.delete-item-block').style.display = "none";
   }
 
@@ -253,9 +267,25 @@ class Home extends React.Component {
     axios({
       method: 'delete',
       url: 'https://raysael.herokuapp.com/todo/' + id
+    }).catch(function(error){
+      alert('Произошла ошибка');
     }).then((responce) => {
-      this.updatePostsList();
-      document.querySelector('.delete-item-block').style.display = "none";
+      // this.updatePostsList();
+      let postsList = this.state.posts;
+      let sliceElement = null;
+      postsList.forEach((post, i, mass) => {
+        console.log(i);
+        if(post._id == id) {
+          sliceElement = i;
+        }
+      });
+      if(sliceElement != null) {
+        delete postsList[sliceElement];
+      }
+      this.setState({
+        posts: postsList
+      });
+      this.closePopUp();
     });
   }
 
@@ -276,50 +306,89 @@ class Home extends React.Component {
 
   addPost(e){
       e.preventDefault();
-      let title = document.querySelector('#drawer-title').value;
-      let description = document.querySelector('#drawer-description').value;
-      let author = localStorage.mail;
-      axios({
-        method: 'post',
-        url: 'https://raysael.herokuapp.com/todo',
-        data: {
-          "author" : author,
-          "title" : title,
-          "description" : description
+      let objAddPost = {
+        title: document.querySelector('#drawer-title').value,
+        description: document.querySelector('#drawer-description').value,
+        author: localStorage.mail
+      };
+      for(let varibles in objAddPost) {
+        if(objAddPost[varibles] == ''){
+          alert('Заполните все поля!');
+          return false;
         }
-      }).then((responce) => {
-        if(responce.status == '201' || responce.status == '200'){
-          this.updatePostsList();
-        }
-      });
+      }
+        axios.post('https://raysael.herokuapp.com/todo', {
+          author : objAddPost.author,
+          title : objAddPost.title,
+          description : objAddPost.description
+        }).catch(function(error){
+          alert('Произошла ошибка');
+        }).then((responce) => {
+          this.closeDrawer();
+          if(responce.status == '201' || responce.status == '200'){
+            document.querySelector('#drawer-title').value = null;
+            document.querySelector('#drawer-description').value = null;
+            let postsList = this.state.posts;
+            postsList.push(responce.data);
+            this.setState({
+              posts: postsList
+            });
+            // this.updatePostsList();
+            this.closeDrawer();
+          }
+        });
   }
 
   updatePost(e){
     e.preventDefault();
-    let id = document.querySelector('#update-post-id').value;
-    let title = document.querySelector('#drawer-title').value;
-    let description = document.querySelector('#drawer-description').value;
+    let objUpdPost = {
+      id: document.querySelector('#update-post-id').value,
+      title: document.querySelector('#drawer-title').value,
+      description: document.querySelector('#drawer-description').value
+    };
+    for(let varibles in objUpdPost) {
+      if(objUpdPost[varibles] == ''){
+        alert('Заполните все поля!');
+        return false;
+      }
+    }
     axios({
       method: 'patch',
-      url: 'https://raysael.herokuapp.com/todo/' + id,
+      url: 'https://raysael.herokuapp.com/todo/' + objUpdPost.id,
       data: {
-        "title" : title,
-        "description" : description
+        title: objUpdPost.title,
+        description: objUpdPost.description
       }
+    }).catch(function(error){
+      alert('Произошла ошибка');
     }).then((responce) => {
+      document.querySelector('#update-post-id').value = null;
+      document.querySelector('#drawer-title').value = null;
+      document.querySelector('#drawer-description').value = null;
+      this.closeDrawer();
       if(responce.status == '201' || responce.status == '200'){
-        document.querySelector('.title-' + id).innerText = title;
-        document.querySelector('.description-' + id).innerText = description;
+        this.closeDrawer();
+        let postsList = this.state.posts;
+        postsList.forEach((post, i, mass) => {
+          if(post._id == objUpdPost.id) {
+            postsList[i] = responce.data;
+          }
+        });
+        this.setState({
+          posts: postsList
+        });
       }
     });
   }
 
   openDrawerAdd(){
     this.setState({formAdd: true});
+    // alert(this.state.formAdd);
     if(document.querySelector('#add-item').disabled == false){
       // this.disabledFunctinalButtons();
       let drawer = document.querySelector('.add-and-update-block');
       if(getComputedStyle(drawer).left == '-400px' || getComputedStyle(drawer).left == '-320px') {
+        document.querySelector('.overlay').style.display = "block";
         drawer.style.left = '0px';
       }
     }
@@ -327,18 +396,19 @@ class Home extends React.Component {
 
   openDrawerUpdate(identify){
     if(this.state.formAdd == true){
-    this.setState(
-      {
-        formAdd: false,
-        idUpdateItem: identify
+      this.setState(
+        {
+          formAdd: false,
+          idUpdateItem: identify
+        }
+      );
+      document.querySelector('.overlay').style.display = "block";
+      if(document.querySelector('.redact-item').disabled == false){
+        let drawer = document.querySelector('.add-and-update-block');
+        if(getComputedStyle(drawer).left == '-' + getComputedStyle(drawer).width) {
+          drawer.style.left = '0px';
+        }
       }
-    );
-    if(document.querySelector('.redact-item').disabled == false){
-      let drawer = document.querySelector('.add-and-update-block');
-      if(getComputedStyle(drawer).left == '-' + getComputedStyle(drawer).width) {
-        drawer.style.left = '0px';
-      }
-    }
     }
   }
 
@@ -361,15 +431,17 @@ class Home extends React.Component {
   }
 
   closeDrawer(){
-    this.setState(
-      {
-        formAdd: true,
-        idUpdateItem: null
-      }
-    );
     if(document.querySelector('#add-item').disabled == false){
       let drawer = document.querySelector('.add-and-update-block');
       if(getComputedStyle(drawer).left == '0px') {
+        // alert(1);
+        document.querySelector('.overlay').style.display = "none";
+        this.setState(
+          {
+            formAdd: true,
+            idUpdateItem: null
+          }
+        );
         drawer.style.left = '-' + getComputedStyle(drawer).width;
       }
     }
@@ -379,10 +451,15 @@ class Home extends React.Component {
     this.updatePostsList();
   }
 
+  componentWillUnmount(){
+    cancel();
+  }
+
   render(){
     if(this.state.isAuth) {
       return(
       <div className="main-block-content">
+        <div className="overlay"></div>
         <Drawer
           formAdd={this.state.formAdd}
           addPost={this.addPost}
@@ -405,6 +482,7 @@ class Home extends React.Component {
           {this.state.posts.map((post) => {
             return(
               <ItemElement
+                key={post._id}
                 title={post.title}
                 description={post.description}
                 openPopUp={() => {this.openPopUp(post._id)}}
@@ -428,7 +506,5 @@ class Home extends React.Component {
     }
   }
 }
-
-
 
 export default Home;

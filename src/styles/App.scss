@@ -5,6 +5,9 @@
   padding: 0;
   box-sizing: border-box;
 }
+button {
+  cursor: pointer !important;
+}
 html {
   height: 100%;
 }
@@ -237,7 +240,7 @@ body {
   display: none;
   width: 100%;
   position: fixed;
-  z-index: 10;
+  z-index: 15;
   top: 30%;
   justify-content: center;
   .popUp {
@@ -274,7 +277,7 @@ body {
 }
 
 .add-and-update-block {
-  z-index: 10;
+  z-index: 15;
   font-family: 'Roboto', sans-serif;
   padding: 15px 15px 15px 15px;
   position: fixed;
@@ -301,11 +304,15 @@ body {
     outline: none;
   }
   input[type=text], textarea {
+    padding: 3px 3px 3px 3px;
     line-height: 22px;
     width: 100%;
     background: 0;
     border: 1px solid black;
     border-radius: 10px;
+  }
+  textarea {
+    height: 120px;
   }
   #submit-drawer {
     padding: 7px 15px 7px 15px;
@@ -349,4 +356,13 @@ body {
   .add-and-update-block {
     width: 320px;
   }
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 10;
 }
