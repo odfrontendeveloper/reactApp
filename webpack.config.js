@@ -5,6 +5,16 @@ const autoprefixer = require('autoprefixer');
 const CopyPlugin = require('copy-webpack-plugin');
 const ImageminPlugin = require('imagemin-webpack-plugin').default;
 
+__REACT_DEVTOOLS_GLOBAL_HOOK__ = true;
+
+if (
+  process.env.NODE_ENV === 'production' &&
+  window.__REACT_DEVTOOLS_GLOBAL_HOOK__ &&
+  Object.keys(window.__REACT_DEVTOOLS_GLOBAL_HOOK__._renderers).length
+) {
+  window.__REACT_DEVTOOLS_GLOBAL_HOOK__._renderers = {}
+}
+
 module.exports = {
   entry: "./src/index.js",
   output: {
